@@ -14,3 +14,4 @@ it consist of two services
 - create db url in .env file
 - create database with same name that you include at the end db url i.e. in my case, it's /inventory
 - Create the basic folder structure of our app
+- created
