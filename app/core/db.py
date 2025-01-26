@@ -1,7 +1,7 @@
 from typing import Generator
 from sqlmodel import create_engine, Session, SQLModel
-from app.models.users import User
-from app.models.products import Product
+from app.models.user import User
+from app.models.product import Product
 from app.core.config import settings
 
 

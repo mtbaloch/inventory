@@ -3,7 +3,7 @@ from sqlmodel import Session, select
 from fastapi import Depends
 from app.core.db import db_session
 from typing import Union
-from app.models.users import User
+from app.models.user import User
 import bcrypt
 from datetime import datetime, timezone, timedelta
 
@@ -89,8 +89,27 @@ class Auth:
         )
         
         return access_token, refresh_token
+    
+    def verify_token(self, token: str, token_type: str = "access"):
+
+        try:
+            key = self.access_token_key if token_type == "access" else self.refresh_token_key
+
+            verified_token = jwt.decode(token, key, algorithms=["HS256"])
+
+            return verified_token
+        except jwt.ExpiredSignatureError:
+            print("you'r session is expired, please, login again")
+            return None
+        except jwt.InvalidTokenError:
+            print("invalid token")
+            return None
+
+
         
-# userAuth = Auth() # constructor function
+        
+def get_user_auth(db_session: Session = Depends(db_session)) -> Auth:
+    return Auth(db_session)
 
 
 # is class is callable/invoke = yes

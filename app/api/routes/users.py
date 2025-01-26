@@ -1,15 +1,12 @@
 from fastapi import APIRouter, Form, Response, status, Depends, HTTPException
 from app.core.db import db_session
-from app.models.users import User
+from app.models.user import User
 from sqlmodel import Session, select
 from app.api.utils.user_auth_utils import Auth
-
+from app.api.utils.user_auth_utils import get_user_auth
 
 user_router = APIRouter(prefix='/users', tags=["Users"])
 
-
-def get_user_auth(db_session: Session = Depends(db_session)) -> Auth:
-    return Auth(db_session)
 
 @user_router.post("/signup", status_code=status.HTTP_201_CREATED)
 async def create_new_user(user_data: User, user_auth: Auth = Depends(get_user_auth) ):
