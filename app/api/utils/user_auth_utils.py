@@ -11,7 +11,7 @@ class Auth:
     # constant
     access_token_key= "ndng93838490i93r9nre340"
     refresh_token_key="eriofgj390u490r338u4ur934u0r93u"
-    def __init__(self, db_session: Session = Depends(db_session)):
+    def __init__(self, db_session):
         self.db_session = db_session
     
     async def get_user_by_email(self, email:str)-> Union[User, None]:

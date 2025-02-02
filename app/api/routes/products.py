@@ -1,51 +1,45 @@
 from fastapi import APIRouter, Depends, Header, status, HTTPException
 from app.core.db import db_session
 from app.models.product import Product
-from app.api.utils.user_auth_utils import get_user_auth
+from app.schemas.product_schema import productSchema
 from sqlmodel import Session, select
 from typing import Optional
+from app.api.middlewares.auth_middleware import auth
+
 product_router = APIRouter(prefix="/products", tags=["products"])
 
 @product_router.post("/")
-async def create_new_product(product_data:Product, authorization:str = Header(...),db: Session = Depends(db_session), session:Session = Depends(get_user_auth)):
-    
-    if not authorization.startswith("Bearer "):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Unathorized to create new product")
-    
-    "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzZmE4NWY2NC01NzE3LTQ1NjItYjNmYy0yYzk2M2Y2NmFmYTYiLCJleHAiOjE3Mzc5MjIwNjMsImlhdCI6MTczNzkxMTI2M30.u8mZGQwUkGYkaNQOpFD9kybd5iaY9M7h1AmW7s1-IMM"
-    token = authorization.split(" ")[1]
-
-    isTokenVerified = session.verify_token(token)
-    print(isTokenVerified)
-
-    if not isTokenVerified:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f"token error {isTokenVerified}")
-    
-    user_id = isTokenVerified["sub"]
-
-    if not product_data.description or not product_data.price or not product_data.status or not product_data.user_id or not product_data.updated_at or not product_data.created_at or not product_data.product_name or not product_data.product_category or not product_data.quantity:
+async def create_new_product(product_data:productSchema, user_id: str = Depends(auth),db: Session = Depends(db_session)):
+   
+    if not product_data.description or not product_data.price or not product_data.product_name or not product_data.product_category or not product_data.quantity:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="All fields are required")
     # Handle the invalid data case
         
 
-
-    product_data.user_id= user_id
-
-    db.add(product_data)
+    # we accept the user_id from auth middleware which is coming after 
+    # verifying the identity of user/customer
+    # as we are validating our body data on the basis
+    # of schema model which is not for database tables
+    # therefore, we need to first dumpt the incoming data
+    # into pyhton dictionary using model_dump() method
+    data = product_data.model_dump()
+    data["user_id"] = user_id
+    # after that we use main Product model to create data 
+    # that we use to save in database
+    # ** mean destructure the dictionary items
+    data = Product(**data)
+    # below we will send data to the table
+    db.add(data)
     db.commit()
-    db.refresh(product_data)
+    db.refresh(data)
     
-    return {"status":True, "message":"Product is created successfully", "data":product_data}
+    return {"status":True, "message":"Product is created successfully", "data":data}
 
 
 
 @product_router.get("/")
-async def get_all_products(authorization:Optional[str] = Header(None), db: Session = Depends(db_session)):
-
-
-    if authorization is None:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized")
-
+async def get_all_products(auth = Depends(auth), db: Session = Depends(db_session)):
+    
     statement = select(Product)
     products =  db.exec(statement).all()
 
